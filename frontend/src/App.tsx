@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Users, MessageCircle, Hash, Send, Heart, Share2, User } from 'lucide-react';
-import './App.css';
+import { Button } from './components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+import { Textarea } from './components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
+import { Input } from './components/ui/input';
+import './index.css';
 
 interface SocialPost {
   id: string;
@@ -60,9 +66,9 @@ function App() {
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
       
-      if (event.type === 'post') {
+      if (data.type === 'post') {
         setPosts(prev => [data, ...prev]);
-      } else if (event.type === 'profile') {
+      } else if (data.type === 'profile') {
         setPeers(prev => {
           const exists = prev.find(p => p.id === data.id);
           if (exists) return prev;
@@ -119,133 +125,144 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <header className="header">
-        <div className="header-content">
-          <div className="logo">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b">
+        <div className="container flex h-16 items-center px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center space-x-2">
             <Hash size={32} />
-            <h1>DecentralNet</h1>
+            <h1 className="text-xl font-bold">DecentralNet</h1>
           </div>
-          <div className="user-info">
+          <div className="ml-auto flex items-center space-x-4">
             {profile && (
-              <div className="profile-badge">
-                <User size={20} />
+              <div className="flex items-center space-x-2">
+                <Avatar>
+                  <AvatarFallback>{profile.username[0]}</AvatarFallback>
+                </Avatar>
                 <span>{profile.username}</span>
-                <span className="user-id">({profile.id.slice(0, 8)}...)</span>
+                <span className="text-xs text-muted-foreground">({profile.id.slice(0, 8)}...)</span>
               </div>
             )}
           </div>
         </div>
       </header>
 
-      <nav className="nav-tabs">
-        <button 
-          className={`tab ${activeTab === 'feed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('feed')}
-        >
-          <MessageCircle size={18} />
-          Feed ({posts.length})
-        </button>
-        <button 
-          className={`tab ${activeTab === 'peers' ? 'active' : ''}`}
-          onClick={() => setActiveTab('peers')}
-        >
-          <Users size={18} />
-          Peers ({peers.length})
-        </button>
-      </nav>
+      <div className="container mx-auto p-4">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'feed' | 'peers')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="feed">
+              <MessageCircle size={18} className="mr-2" />
+              Feed ({posts.length})
+            </TabsTrigger>
+            <TabsTrigger value="peers">
+              <Users size={18} className="mr-2" />
+              Peers ({peers.length})
+            </TabsTrigger>
+          </TabsList>
 
-      <main className="main-content">
-        {activeTab === 'feed' && (
-          <div className="feed">
-            <form className="post-form" onSubmit={handleCreatePost}>
-              <textarea
-                value={newPost}
-                onChange={(e) => setNewPost(e.target.value)}
-                placeholder="What's on your mind? Share with the decentralized network..."
-                maxLength={280}
-                rows={3}
-              />
-              <div className="post-form-footer">
-                <span className="char-count">{newPost.length}/280</span>
-                <button type="submit" disabled={!newPost.trim()}>
-                  <Send size={16} />
-                  Post to Network
-                </button>
-              </div>
-            </form>
+          <TabsContent value="feed" className="mt-4">
+            <Card>
+              <CardContent className="space-y-4">
+                <form onSubmit={handleCreatePost} className="space-y-2">
+                  <Textarea
+                    value={newPost}
+                    onChange={(e) => setNewPost(e.target.value)}
+                    placeholder="What's on your mind? Share with the decentralized network..."
+                    maxLength={280}
+                    className="min-h-[80px]"
+                  />
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{newPost.length}/280</span>
+                    <Button type="submit" disabled={!newPost.trim()}>
+                      <Send size={16} className="mr-2" />
+                      Post to Network
+                    </Button>
+                  </div>
+                </form>
 
-            <div className="posts">
-              {posts.length === 0 ? (
-                <div className="empty-state">
-                  <MessageCircle size={48} />
-                  <h3>No posts yet</h3>
-                  <p>Be the first to share something on the decentralized network!</p>
+                <div className="space-y-4">
+                  {posts.length === 0 ? (
+                    <Card className="text-center">
+                      <CardContent className="p-8">
+                        <MessageCircle size={48} className="mx-auto mb-2 opacity-50" />
+                        <CardTitle className="text-lg">No posts yet</CardTitle>
+                        <CardDescription>Be the first to share something on the decentralized network!</CardDescription>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    posts.map(post => (
+                      <Card key={post.id}>
+                        <CardHeader className="flex flex-row items-center space-x-4 pb-2">
+                          <Avatar>
+                            <AvatarFallback>U</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <CardTitle className="text-sm font-medium">{post.author}</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground">({post.id.slice(0, 8)}...)</CardDescription>
+                          </div>
+                          <div className="ml-auto text-xs text-muted-foreground">
+                            {formatTime(post.timestamp)}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pb-2">
+                          <p>{post.content}</p>
+                        </CardContent>
+                        <CardFooter className="flex space-x-4 border-t pt-2">
+                          <Button variant="ghost" size="sm">
+                            <Heart size={16} className="mr-2" />
+                            Like
+                          </Button>
+                          <Button variant="ghost" size="sm">
+                            <Share2 size={16} className="mr-2" />
+                            Share
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))
+                  )}
                 </div>
-              ) : (
-                posts.map(post => (
-                  <div key={post.id} className="post">
-                    <div className="post-header">
-                      <div className="post-author">
-                        <User size={20} />
-                        <span className="username">{post.author}</span>
-                        <span className="user-id">({post.id.slice(0, 8)}...)</span>
-                      </div>
-                      <span className="post-time">{formatTime(post.timestamp)}</span>
-                    </div>
-                    <div className="post-content">
-                      {post.content}
-                    </div>
-                    <div className="post-actions">
-                      <button className="action-btn">
-                        <Heart size={16} />
-                        Like
-                      </button>
-                      <button className="action-btn">
-                        <Share2 size={16} />
-                        Share
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {activeTab === 'peers' && (
-          <div className="peers">
-            {peers.length === 0 ? (
-              <div className="empty-state">
-                <Users size={48} />
-                <h3>No peers connected</h3>
-                <p>Waiting for other nodes to join the network...</p>
-              </div>
-            ) : (
-              <div className="peer-list">
-                {peers.map(peer => (
-                  <div key={peer.id} className="peer-card">
-                    <div className="peer-info">
-                      <User size={24} />
-                      <div>
-                        <h4>{peer.username}</h4>
-                        <p className="peer-id">{peer.id.slice(0, 16)}...</p>
-                        {peer.bio && <p className="peer-bio">{peer.bio}</p>}
-                      </div>
-                    </div>
-                    <button 
-                      className="follow-btn"
-                      onClick={() => handleFollow(peer.id)}
-                    >
-                      Follow
-                    </button>
+          <TabsContent value="peers" className="mt-4">
+            <Card>
+              <CardContent className="space-y-4">
+                {peers.length === 0 ? (
+                  <Card className="text-center">
+                    <CardContent className="p-8">
+                      <Users size={48} className="mx-auto mb-2 opacity-50" />
+                      <CardTitle className="text-lg">No peers connected</CardTitle>
+                      <CardDescription>Waiting for other nodes to join the network...</CardDescription>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {peers.map(peer => (
+                      <Card key={peer.id}>
+                        <CardHeader className="flex flex-row items-center space-x-4 pb-2">
+                          <Avatar>
+                            <AvatarFallback>{peer.username[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="space-y-1">
+                            <CardTitle className="text-sm font-medium">{peer.username}</CardTitle>
+                            <CardDescription className="text-xs text-muted-foreground">{peer.id.slice(0, 16)}...</CardDescription>
+                            {peer.bio && <CardDescription className="text-sm">{peer.bio}</CardDescription>}
+                          </div>
+                        </CardHeader>
+                        <CardFooter className="flex justify-end pt-2">
+                          <Button onClick={() => handleFollow(peer.id)}>
+                            Follow
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </main>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
